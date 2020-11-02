@@ -1,5 +1,5 @@
 
-async function execAsync(db, sql, params) {
+async function execAsync(sql, params) {
     params = params ? params : [];
     return new Promise((resolve, reject) => {
         db.all(sql, params, (error, result) => {
@@ -13,6 +13,17 @@ async function execAsync(db, sql, params) {
     })
 }
 
+function execScript(sql) {
+    db.exec(sql, (err) => {
+        if (err) {
+            logError(err);
+            throw err;
+        }
+    });
+}
+
+
 module.exports = {
-    execAsync: execAsync
+    execAsync: execAsync,
+    execScript: execScript
 }
