@@ -1,14 +1,10 @@
 const config = require('../config.json');
 const shelljs = require("shelljs");
-const sqlite3 = require('sqlite3').verbose();
 const dbUtils = require('./db-utils');
 const ddlScriptPath = "./db/ddl.sql";
 const fs = require("fs");
-const db = new sqlite3.Database('db.sqlite3');
 const logger =require('../utils/logUtils').getLogger("db-checker");
 const {isFolderExists, isFileExists} =require('../utils/fileUtils');
-
-global['db'] = db;
 
 function isSplitScreen(features) {
     return features.some(feature => feature.toLowerCase().includes('split-screen'))
@@ -53,6 +49,8 @@ async function initDb() {
 
 
 let execute = async function () {
+    logger.info('game data loading...')
+
     let gamesDataPath = config.gamesDataPath;
 
     if (isFolderExists(gamesDataPath)) {

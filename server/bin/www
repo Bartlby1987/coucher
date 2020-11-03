@@ -18,7 +18,7 @@ const dbChecker = require("../db/db-checker");
     try {
         await dbChecker.execute();
     } catch (error) {
-        throw error;
+        logger.error('unable to init database: ' + error);
     }
 
     var port = normalizePort(process.env.PORT || '3000');
