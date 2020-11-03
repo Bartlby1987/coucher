@@ -1,8 +1,9 @@
 const log4js = require("log4js");
 
+const initTime = new Date().toISOString();
 log4js.configure({
     appenders: {
-        dateFile: {type: 'dateFile', filename: 'logs/server.log', pattern: '.yyyy-MM-dd-hh'},
+        dateFile: {type: 'dateFile', filename: `logs/server.${initTime}.log`, pattern: '.yyyy-MM-dd-hh'},
         console: {type: 'console'}
     },
     categories: {default: {appenders: ["dateFile", "console"], level: "debug"}}

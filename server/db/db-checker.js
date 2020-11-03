@@ -74,4 +74,8 @@ let execute = async function () {
 
 }
 
-execute();
+// execute();
+
+module.exports = {
+    execute: execute
+}
