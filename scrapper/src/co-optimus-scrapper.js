@@ -1,10 +1,11 @@
+const fs = require("fs");
 const cheerio = require('cheerio');
 const request = require('sync-request');
 const mkdirp = require('mkdirp');
 const {logInfo, logError} = require("./utils/logUtils");
 const {isInfoExists, isCouchOrFeaturesExists} = require("./utils/infoUtils");
 const generateDataPageUrl = (value) => `https://www.co-optimus.com/ajax/ajax_games.php?game-title-filter=&system=28&countDirection=at%20least&playerCount=2&couch=true&page=${value}&sort=&sortDirection=`
-
+const path = require('path');
 function getGamesInfo() {
     let i = 1;
     let gamesInfo = [];
@@ -37,15 +38,19 @@ function getGamesInfo() {
 
 function parseRow(gameRow) {
     let tdNameAndGenre = gameRow.childNodes[1];
-    let gameName = tdNameAndGenre.children[0].children[0].data
+    let firstChild = tdNameAndGenre.children[0];
+    let gameName = firstChild.children[0].data;
+    let urlGame = firstChild.parent.children[2].attribs.href;
+    ;
+    let folderName = urlGame.match(/.*nintendo-switch\/(.*?).html/)[1];
     if (!isInfoExists(gameName)) {
         logError(`Error. Game not found`);
         return;
     }
-    let genre = tdNameAndGenre.children[3].children[0].data
+    let genre = tdNameAndGenre.children[3].children[0].data;
     if (!isInfoExists((genre))) {
         logError(`Error.Genre not found`);
-        return
+        return;
     }
     let tdCouch = gameRow.childNodes[5];
     let couch = tdCouch.children[0].data;
@@ -57,7 +62,7 @@ function parseRow(gameRow) {
     let featuresInfoArray = tdFeatures.children;
     if (!isCouchOrFeaturesExists(featuresInfoArray)) {
         logError(`Error.Features not found`);
-        return
+        return;
     }
     let features = [];
     for (let k = 0; k < featuresInfoArray.length; k++) {
@@ -75,7 +80,7 @@ function parseRow(gameRow) {
     }
     logInfo(`Parsing game (${gameName}) has been successfully completed`)
     return {
-        "folderName": "",
+        "folderName": folderName,
         "gameName": gameName,
         "genre": genre,
         "couch": couch,
@@ -84,3 +89,24 @@ function parseRow(gameRow) {
     };
 }
 
+function createFoldersGamesInfo() {
+    try {
+        let gamesInfo = getGamesInfo();
+        if (gamesInfo.length === 0) {
+            logError("Games not found.")
+            return;
+        }
+        for (let i = 0; i < gamesInfo.length; i++) {
+            let gameInfo = gamesInfo[i];
+            let folderName = gameInfo.folderName;
+            let pathFolder = path.resolve(`../`);
+            mkdirp.sync(`${pathFolder}/games/${folderName}/images/`);
+            let gameInfoPath = `${pathFolder}/games/${folderName}/gameInfo.json`;
+            fs.writeFileSync(gameInfoPath, JSON.stringify(gameInfo));
+        }
+    } catch (err) {
+        console.error("Technical error", err);
+    }
+}
+
+createFoldersGamesInfo()
