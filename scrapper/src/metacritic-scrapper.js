@@ -19,11 +19,18 @@ function getMetacriticScore() {
             logger.error(`In games folder not have information`);
             return;
         }
+        let metaScoreFoundCounter = 0;
+        let metaScoreNotFoundCounter = 0;
+        let userScoreFoundCounter = 0;
+        let userScoreNotFoundCounter = 0;
+        let notFoundGameCounter = 0;
+        let gameFoundCounter = 0;
         for (let i = 0; i < gamesFoldersName.length; i++) {
+            gameFoundCounter++;
             let metacriticInfo;
             let metaScore;
             let userScore;
-            let gameFolderName=gamesFoldersName[i];
+            let gameFolderName = gamesFoldersName[i];
             let gameName = gamesAndFoldersNames[gameFolderName];
             let searchGamePage = getSearchGamePage(gameName);
             let res = request('GET', encodeURI(searchGamePage), {});
@@ -37,16 +44,20 @@ function getMetacriticScore() {
                 let metaInfo = htmlGamePage(META_INFO_SELECTOR).text();
                 let userInfo = htmlGamePage(USER_INFO_SELECTOR).text();
                 if (metaInfo) {
+                    metaScoreFoundCounter++;
                     logger.info(`Metascore on (${gameName}) has been successfully found: (${metaInfo})`)
                     metaScore = metaInfo;
                 } else {
+                    metaScoreNotFoundCounter++;
                     logger.error(`Metascore on game (${gameName}) not found.`)
                     metaScore = "NA";
                 }
                 if (!!userInfo && userInfo !== "tbd") {
+                    userScoreFoundCounter++;
                     logger.info(`User score on (${gameName}) has been successfully found: (${userInfo})`)
                     userScore = userInfo;
                 } else {
+                    userScoreNotFoundCounter++;
                     logger.error(`User score on game (${gameName}) not found.`)
                     userScore = "NA";
                 }
@@ -57,6 +68,7 @@ function getMetacriticScore() {
                 }
             } else {
                 logger.error(`Game (${gameName}) not found.`)
+                notFoundGameCounter++;
                 metacriticInfo = {
                     "gameName": gameName,
                     "error": "game not found"
@@ -66,6 +78,13 @@ function getMetacriticScore() {
             let gameInfoPath = `${pathFolder}/games/${gameFolderName}/metacriticInfo.json`;
             fs.writeFileSync(gameInfoPath, JSON.stringify(metacriticInfo));
         }
+        logger.info(`\n Total number of games: (${gameFoundCounter});\n 
+          games not found: (${notFoundGameCounter});\n 
+          metascore has been found: (${metaScoreFoundCounter});\n
+          metascore not found: (${metaScoreNotFoundCounter});\n
+          user score has been found: (${userScoreFoundCounter});\n
+          user score not found: (${userScoreNotFoundCounter});\n
+          `)
     } catch (err) {
         logger.error("Technical error", err);
     }
