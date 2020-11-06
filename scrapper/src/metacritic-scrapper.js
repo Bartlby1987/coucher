@@ -11,6 +11,62 @@ const GAME_PAGE_HREF_SELECTOR = "#main_content > div.fxdrow.search_results_wrapp
 const META_INFO_SELECTOR = `div.summary_wrap > div.section.product_scores > div.details.main_details > div > div > a > div > span`;
 const USER_INFO_SELECTOR = `div.summary_wrap > div.section.product_scores > div.details.side_details > div:nth-child(1) > div > a > div`;
 const pathFolder = path.resolve(`../`);
+
+function writeMetacriticScore(gamesStatistics, gamesFoldersName, gamesAndFoldersNames) {
+    for (let i = 0; i < gamesFoldersName.length; i++) {
+        let metacriticInfo;
+        let metaScore;
+        let userScore;
+        let gameFolderName = gamesFoldersName[i];
+        let gameName = gamesAndFoldersNames[gameFolderName];
+        let searchGamePage = getSearchGamePage(gameName);
+        let res = request('GET', encodeURI(searchGamePage), {});
+        let htmlSearchPage = cheerio.load(res.body);
+        let gamePageHref = htmlSearchPage(GAME_PAGE_HREF_SELECTOR).attr("href");
+        if (gamePageHref) {
+            gamePageHref = gamePageHref.slice(1);
+            let gamePage = `${URL_SITE_PAGE}${gamePageHref}`;
+            let gamePageRes = request('GET', encodeURI(gamePage), {});
+            let htmlGamePage = cheerio.load(gamePageRes.body);
+            let metaInfo = htmlGamePage(META_INFO_SELECTOR).text();
+            let userInfo = htmlGamePage(USER_INFO_SELECTOR).text();
+            if (metaInfo) {
+                (gamesStatistics.metaScoreFoundCounter)++;
+                logger.info(`Metascore on (${gameName}) has been successfully found: (${metaInfo})`)
+                metaScore = metaInfo;
+            } else {
+                (gamesStatistics.metaScoreNotFoundCounter)++;
+                logger.error(`Metascore on game (${gameName}) not found.`)
+                metaScore = "NA";
+            }
+            if (!!userInfo && userInfo !== "tbd") {
+                (gamesStatistics.userScoreFoundCounter)++;
+                logger.info(`User score on (${gameName}) has been successfully found: (${userInfo})`)
+                userScore = userInfo;
+            } else {
+                (gamesStatistics.userScoreNotFoundCounter)++;
+                logger.error(`User score on game (${gameName}) not found.`)
+                userScore = "NA";
+            }
+            metacriticInfo = {
+                "gameName": gameName,
+                "metaScore": metaScore,
+                "userScore": userScore,
+            }
+        } else {
+            logger.error(`Game (${gameName}) not found.`);
+            (gamesStatistics.notFoundGameCounter)++
+            metacriticInfo = {
+                "gameName": gameName,
+                "error": "game not found"
+            }
+        }
+        logger.info(`Creation metacriticInfo on game (${gameName}: ${metaScore};${userScore}) has been completed.`)
+        let gameInfoPath = `${pathFolder}/games/${gameFolderName}/metacriticInfo.json`;
+        fs.writeFileSync(gameInfoPath, JSON.stringify(metacriticInfo));
+    }
+}
+
 function getMetacriticScore() {
     try {
         let gamesAndFoldersNames = gatGamesAndFoldersNames();
@@ -19,71 +75,20 @@ function getMetacriticScore() {
             logger.error(`In games folder not have information`);
             return;
         }
-        let metaScoreFoundCounter = 0;
-        let metaScoreNotFoundCounter = 0;
-        let userScoreFoundCounter = 0;
-        let userScoreNotFoundCounter = 0;
-        let notFoundGameCounter = 0;
-        let gameFoundCounter = 0;
-        for (let i = 0; i < gamesFoldersName.length; i++) {
-            gameFoundCounter++;
-            let metacriticInfo;
-            let metaScore;
-            let userScore;
-            let gameFolderName = gamesFoldersName[i];
-            let gameName = gamesAndFoldersNames[gameFolderName];
-            let searchGamePage = getSearchGamePage(gameName);
-            let res = request('GET', encodeURI(searchGamePage), {});
-            let htmlSearchPage = cheerio.load(res.body);
-            let gamePageHref = htmlSearchPage(GAME_PAGE_HREF_SELECTOR).attr("href");
-            if (gamePageHref) {
-                gamePageHref = gamePageHref.slice(1);
-                let gamePage = `${URL_SITE_PAGE}${gamePageHref}`;
-                let gamePageRes = request('GET', encodeURI(gamePage), {});
-                let htmlGamePage = cheerio.load(gamePageRes.body);
-                let metaInfo = htmlGamePage(META_INFO_SELECTOR).text();
-                let userInfo = htmlGamePage(USER_INFO_SELECTOR).text();
-                if (metaInfo) {
-                    metaScoreFoundCounter++;
-                    logger.info(`Metascore on (${gameName}) has been successfully found: (${metaInfo})`)
-                    metaScore = metaInfo;
-                } else {
-                    metaScoreNotFoundCounter++;
-                    logger.error(`Metascore on game (${gameName}) not found.`)
-                    metaScore = "NA";
-                }
-                if (!!userInfo && userInfo !== "tbd") {
-                    userScoreFoundCounter++;
-                    logger.info(`User score on (${gameName}) has been successfully found: (${userInfo})`)
-                    userScore = userInfo;
-                } else {
-                    userScoreNotFoundCounter++;
-                    logger.error(`User score on game (${gameName}) not found.`)
-                    userScore = "NA";
-                }
-                metacriticInfo = {
-                    "gameName": gameName,
-                    "metaScore": metaScore,
-                    "userScore": userScore,
-                }
-            } else {
-                logger.error(`Game (${gameName}) not found.`)
-                notFoundGameCounter++;
-                metacriticInfo = {
-                    "gameName": gameName,
-                    "error": "game not found"
-                }
-            }
-            logger.info(`Creation metacriticInfo on game (${gameName}: ${metaScore};${userScore}) has been completed.`)
-            let gameInfoPath = `${pathFolder}/games/${gameFolderName}/metacriticInfo.json`;
-            fs.writeFileSync(gameInfoPath, JSON.stringify(metacriticInfo));
-        }
-        logger.info(`\n Total number of games: (${gameFoundCounter});\n 
-          games not found: (${notFoundGameCounter});\n 
-          metascore has been found: (${metaScoreFoundCounter});\n
-          metascore not found: (${metaScoreNotFoundCounter});\n
-          user score has been found: (${userScoreFoundCounter});\n
-          user score not found: (${userScoreNotFoundCounter});\n
+        let gamesStatistics = {
+            metaScoreFoundCounter: 0,
+            metaScoreNotFoundCounter: 0,
+            userScoreFoundCounter: 0,
+            userScoreNotFoundCounter: 0,
+            notFoundGameCounter: 0,
+        };
+        writeMetacriticScore(gamesStatistics, gamesFoldersName, gamesAndFoldersNames);
+        logger.info(` Total number of games: (${gamesFoldersName.length}); 
+          games not found: (${gamesStatistics.notFoundGameCounter});
+          metascore has been found: (${gamesStatistics.metaScoreFoundCounter});
+          metascore not found: (${gamesStatistics.metaScoreNotFoundCounter});
+          user score has been found: (${gamesStatistics.userScoreFoundCounter});
+          user score not found: (${gamesStatistics.userScoreNotFoundCounter});
           `)
     } catch (err) {
         logger.error("Technical error", err);
