@@ -2,9 +2,11 @@
   "name": "scrapper",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run-coop": "node src/co-optimus-scrapper.js",
+    "run-meta": "node src/metacritic-scrapper.js"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +16,7 @@
     "log4js": "^6.3.0",
     "mkdirp": "^1.0.4",
     "path": "^0.12.7",
-    "sync-request": "^6.1.0"
+    "sync-request": "^6.1.0",
+    "puppeteer": "^5.4.1"
   }
 }
