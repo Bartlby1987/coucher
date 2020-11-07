@@ -16,10 +16,16 @@ var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-app.use(morgan({
+const MORGAN_FORMAT_NORMALIZE_REPLACE_REGEXP = /\[\d+m/g;
+const NEWLINES_REPLACE_REGEXP = /(?:\r\n|\r|\n)/g;
+app.use(morgan('dev', {
     format: 'dev',
     stream: {
-        write: str => httpLogger.info(str)
+        write: str => {
+            httpLogger.info(str
+                .replace(MORGAN_FORMAT_NORMALIZE_REPLACE_REGEXP, '')
+                .replace(NEWLINES_REPLACE_REGEXP, ''))
+        }
     }
 }));
 app.use(express.json());
