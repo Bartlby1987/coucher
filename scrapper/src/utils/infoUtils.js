@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require('path');
-let config = require('@root/config.json');
+let config = require('@src/utils/config');
 
 function isInfoExists(gameName) {
     return (gameName === "" || !!(gameName) || (typeof gameName) === "string")
@@ -11,11 +11,10 @@ function isCouchOrFeaturesExists(couch) {
 }
 
 function getGamesAndFoldersNames() {
-    const gamePath = path.resolve(config.gamesFolderPath);
     let games = []
-    fs.readdirSync(gamePath).forEach(file => {
+    fs.readdirSync(config.gamesFolderPath).forEach(file => {
         let folderName = file.trim()
-        let path = `${gamePath}/${folderName}/gameInfo.json`;
+        let path = `${config.gamesFolderPath}/${folderName}/gameInfo.json`;
         let gameInfo = JSON.parse(fs.readFileSync(path, 'utf8'));
         games.push({folderName: folderName, gameName: gameInfo.gameName});
     });

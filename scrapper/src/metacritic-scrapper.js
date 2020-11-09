@@ -3,19 +3,21 @@ require('module-alias/register')
 const cheerio = require('cheerio');
 const request = require('sync-request');
 const fs = require("fs");
-const path = require('path');
+
 const {getGamesAndFoldersNames} = require("./utils/infoUtils");
+const logUtils = require('./utils/logUtils');
+const logger = logUtils.getLogger("metacritic-checker");
+const gamesFolderPath = require('@src/utils/config').gamesFolderPath;
+
 const URL_SITE_PAGE = `https://www.metacritic.com/`;
-const logger = require('./utils/logUtils').getLogger("metacritic-checker");
-const getSearchGamePage = (gameName) => `${URL_SITE_PAGE}search/game/${gameName}/results?plats[268409]=1&search_type=advanced`;
 const GAME_PAGE_HREF_SELECTOR = "#main_content > div.fxdrow.search_results_wrapper > div.module.search_results.fxdcol.gu6 > div.body > ul > " +
     " li > div > div.basic_stats.has_thumbnail > div > h3 > a";
 const META_INFO_SELECTOR = `div.summary_wrap > div.section.product_scores > div.details.main_details > div > div > a > div > span`;
 const USER_INFO_SELECTOR = `div.summary_wrap > div.section.product_scores > div.details.side_details > div:nth-child(1) > div > a > div`;
-let config = require('@root/config.json');
-const gamesFolderPath = path.resolve(config['gamesFolderPath']);
-
 const NOT_AVAILABLE = "NA";
+const getSearchGamePage = (gameName) => `${URL_SITE_PAGE}search/game/${gameName}/results?plats[268409]=1&search_type=advanced`;
+
+
 
 function getMetacriticScore() {
     try {
@@ -24,7 +26,7 @@ function getMetacriticScore() {
             logger.error('games folder is empty');
             return;
         }
-        let counters = createCounters();
+        let counters = logUtils.createCounters();
         for (let gameInfo of gamesAndFoldersNames) {
             try {
                 processGame(gameInfo, counters);
@@ -32,7 +34,7 @@ function getMetacriticScore() {
                 logger.error("error during processing " + gameInfo + " folder: " + e)
             }
         }
-        logTotalInfo(gamesAndFoldersNames.length, counters)
+        logger.info(logUtils.formatTotalInfo(gamesAndFoldersNames.length, counters));
     } catch (err) {
         logger.error("technical error", err);
     }
@@ -97,26 +99,6 @@ function getUserScore(htmlGamePage, counters, gameName) {
         logger.error(`User score on game (${gameName}) not found.`)
         return NOT_AVAILABLE;
     }
-}
-
-function createCounters() {
-    return {
-        metaScoreFound: 0,
-        metaScoreNotFound: 0,
-        userScoreFound: 0,
-        userScoreNotFound: 0,
-        notFoundGame: 0
-    };
-}
-
-function logTotalInfo(gamesAmount, counters) {
-    logger.info(` Total number of games: (${gamesAmount}); 
-          games not found: (${counters.notFoundGame});
-          metascore has been found: (${counters.metaScoreFound});
-          metascore not found: (${counters.metaScoreNotFound});
-          user score has been found: (${counters.userScoreFound});
-          user score not found: (${counters.userScoreNotFound});
-          `);
 }
 
 getMetacriticScore()

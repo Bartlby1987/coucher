@@ -1,3 +1,4 @@
 {
-  "gamesFolderPath": "./games"
+  "gamesFolderPath": "./games",
+  "skipAlreadyProcessed": true
 }
