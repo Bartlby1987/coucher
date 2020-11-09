@@ -18,6 +18,11 @@
     "path": "^0.12.7",
     "sync-request": "^6.1.0",
     "puppeteer": "^5.4.1",
-    "shelljs": "^0.8.4"
+    "shelljs": "^0.8.4",
+    "module-alias": "^2.2.2"
+  },
+  "_moduleAliases": {
+    "@root"      : ".",
+    "@src"      : "src/"
   }
 }
