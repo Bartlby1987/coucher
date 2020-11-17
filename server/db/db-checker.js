@@ -61,7 +61,10 @@ async function processGameFolder(gameFolder) {
         logger.info(metacriticContent.toString())
         let metacriticInfo = JSON.parse(metacriticContent);
 
-        gameInfo = Object.assign(gameInfo, metacriticInfo)
+        if (_.isObject(metacriticInfo)) {
+            gameInfo.metaScore = metacriticInfo.metaScore;
+            gameInfo.userScore = metacriticInfo.userScore;
+        }
     }
 
 

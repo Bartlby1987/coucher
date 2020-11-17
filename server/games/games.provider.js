@@ -28,7 +28,9 @@ const queryGames = async (request) => {
             genre: game.GENRE,
             releaseDate: game.RELEASE_DATE,
             splitScreen: game.SPLIT_SCREEN === 1,
-            players: game.COUCH_PLAYERS
+            players: game.COUCH_PLAYERS,
+            criticScore: game.MC_CRITICS_SCORE,
+            userScore: game.MC_USERS_SCORE
         }
     });
 }
