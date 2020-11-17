@@ -1,79 +1,130 @@
-const cheerio = require('cheerio');
-const request = require('sync-request');
-const fs = require("fs");
-const path = require('path');
-const {gatGamesAndFoldersNames} = require("./utils/infoUtils");
-const logger = require('./utils/logUtils').getLogger("nintendo-checker");
-const pathFolder = path.resolve(`../`);
+require('module-alias/register')
 
-const START_PAGE = 'https://www.nintendo.com/games/game-guide/';
+const shelljs = require("shelljs");
+const fs = require("fs");
+
+const {getGamesAndFoldersNames} = require("./utils/infoUtils");
+const logUtils = require('./utils/logUtils');
+const logger = logUtils.getLogger("nintendo-checker");
+const {gamesFolderPath, skipAlreadyProcessed} = require('@src/utils/config');
+const ndnFileName = 'nintendo.json'
+
+const GET_QUERY_PAGE = (query) => `https://www.nintendo.com/games/game-guide/#filter/:q=${query}&dFR[platform][0]=Nintendo%20Switch`;
 const puppeteer = require('puppeteer');
 
-
-async function getPriceData(page) {
-    return await page.$eval('#games-list-container > ul', ul => {
-        let lis = ul.children;
-        let li = lis[0];
-        let newVar
-        try {
-            newVar = {
-                price: li.querySelector('.b3.row-price > strong').innerHTML
-            };
-        } catch (e) {
-            console.log(e)
-        }
-        return newVar
-    });
-}
-
-let getGameInfo = async (gameName) => {
-    const browser = await puppeteer.launch({'headless': false});
-    const page = await browser.newPage();
-    await page.goto(START_PAGE);
-    await page.waitForSelector('#check-platform-Nintendo\\ Switch');
-    await page.click('#check-platform-Nintendo\\ Switch');
-    await page.waitForTimeout(3000);
-    await page.click('#nclood-nav > div.top-nav-container.pin > div.top-nav > div > div.search-flex > button > span');
-    await page.keyboard.type(gameName);
-    await page.keyboard.press('Enter');
-    await page.waitForSelector('#games-list-container > ul');
-
-    // await page.waitForTimeout(3000);
-
-    let data = await getPriceData(page);
-    await page.waitForSelector(`#games-list-container > ul > li:nth-child(1) > a > h3`);
-    await page.click(`#games-list-container > ul > li:nth-child(1) > a > h3`);
-
-
-
-
-    // await browser.close();
-    return data;
-};
-
-async function getScreenshotFromNintendo() {
+async function execute() {
     try {
-        let gamesAndFoldersNames = gatGamesAndFoldersNames();
-        let gamesFoldersName = Object.keys(gamesAndFoldersNames);
-        if (gamesFoldersName.length === 0 || !gamesFoldersName) {
-            logger.error(`In games folder not have information`);
+        let gamesAndFoldersNames = getGamesAndFoldersNames();
+        if (gamesAndFoldersNames.length === 0) {
+            logger.error('games folder is empty');
+            return;
+        } else {
+            logger.info('total games amount: ' + gamesAndFoldersNames.length);
         }
-        for (let i = 0; i < gamesFoldersName.length; i++) {
-            let gameFolderName = gamesFoldersName[i];
-            let gameName = gamesAndFoldersNames[gameFolderName];
+
+        let counters = logUtils.createCounters();
+        for (let gameInfo of gamesAndFoldersNames) {
+            let ndnFilePath = `${gamesFolderPath}/${gameInfo.folderName}/${ndnFileName}`;
+            if (skipAlreadyProcessed && isFileExists(ndnFilePath)) {
+                logger.info(`game ${gameInfo.gameName} already processed: skipping...`)
+                continue;
+            }
+
             try {
-                let gameInfo = await getGameInfo(gameName);
-                gameInfo["name"] = gameName;
-                let gameInfoPath = `${pathFolder}/games/${gameFolderName}/nintendoInfo.json`;
-                fs.writeFileSync(gameInfoPath, JSON.stringify(gameInfoPath));
-            } catch (err) {
-                logger.error(`Game ${gameName} is not found.: ` + err);
-                break;
+                logger.info('getting info for ' + gameInfo.gameName)
+                let ndnGameInfo = await getGameInfo(gameInfo, counters);
+                logger.info('received game data for ' + gameInfo.gameName + ": " + JSON.stringify(ndnGameInfo))
+                fs.writeFileSync(ndnFilePath, JSON.stringify(ndnGameInfo));
+
+                let imageFolderPath = `${gamesFolderPath}/${gameInfo.folderName}/images`;
+
+                if (ndnGameInfo.images && ndnGameInfo.images.length !== 0) {
+                    shelljs.mkdir('-p', imageFolderPath)
+
+                    for (let imgUrl of ndnGameInfo.images) {
+                        shelljs.exec(`wget ${imgUrl} -P ${imageFolderPath}`)
+                    }
+                }
+
+
+            } catch (e) {
+                logger.error("error during processing " + gameInfo.gameName + " folder: " + e)
             }
         }
+        logger.info(logUtils.formatTotalInfo(gamesAndFoldersNames.length, counters));
+
     } catch (err) {
-        logger.error(`Technical error` + err);
+        logger.error("technical error", err);
     }
 }
 
-getGameInfo('Bleed');
+let getGameInfo = async (gameInfo) => {
+    const browser = await puppeteer.launch({'headless': true});
+    try {
+        const page = await browser.newPage();
+        await page.goto(GET_QUERY_PAGE(encodeURI(gameInfo.gameName)));
+        await page.waitForSelector('#games-list-container > ul');
+
+        let data = {};
+        data.price = await getPriceData(page);
+        await page.waitForSelector(`#games-list-container > ul > li:nth-child(1) > a`);
+        await page.waitForTimeout(1500);
+        await page.click(`#games-list-container > ul > li:nth-child(1) > a > div > div > img`);
+
+        await page.waitForTimeout(5000);
+        await page.waitForTimeout(1000);
+
+        try {
+            data.images = await page.$eval('#gallery-component > product-gallery', root => {
+                let imageItems = root.shadowRoot.querySelectorAll('product-gallery-item[type=image]');
+                let imagesUrls = [];
+                for (let imageItem of imageItems) {
+                    imagesUrls.push(imageItem.shadowRoot.querySelector('img').src);
+                }
+                return imagesUrls
+            })
+        }catch (e) {
+            logger.error("unable to get images: " + e)
+        }
+
+        console.log('images: ' + JSON.stringify(data.images))
+        return data;
+    } catch (e) {
+        logger.error('error:' + e)
+    } finally {
+        await browser.close();
+    }
+
+};
+
+async function getPriceData(page) {
+    try {
+        return await page.$eval('#games-list-container > ul', ul => {
+            let lis = ul.children;
+            let li = lis[0];
+
+            return li.querySelector('.b3.row-price > strong').innerHTML
+        });
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+(async () => {
+    await execute()
+})();
+
+/*
+(async () => {
+    let gameInfo = await getGameInfo('Super Mario Odyssey');
+
+    for (let imgUrl of gameInfo.images) {
+        shelljs.exec(`wget ${imgUrl} -P /home/bartlby/IdeaProjects/coucher/scrapper/tmp/`)
+    }
+
+})();
+*/
+
+function isFileExists(gamesDataPath) {
+    return shelljs.test(`-f`, gamesDataPath)
+}

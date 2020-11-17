@@ -1,3 +1,5 @@
+require('module-alias/register')
+
 const fs = require("fs");
 const cheerio = require('cheerio');
 const request = require('sync-request');

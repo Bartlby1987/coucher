@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "run-coop": "node src/co-optimus-scrapper.js",
-    "run-meta": "node src/metacritic-scrapper.js"
+    "run-meta": "node src/metacritic-scrapper.js",
+    "run-ndn": "node src/nintendo-scrapper.js"
   },
   "keywords": [],
   "author": "",
