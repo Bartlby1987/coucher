@@ -1,4 +1,4 @@
 {
-  "gamesDataPath": "../scrapper/games",
+  "gamesDataPath": "../games",
   "storagePath": "../scrapper/storage"
 }

@@ -7,7 +7,7 @@ const {getGamesAndFoldersNames} = require("./utils/infoUtils");
 const logUtils = require('./utils/logUtils');
 const logger = logUtils.getLogger("nintendo-checker");
 const {gamesFolderPath, skipAlreadyProcessed} = require('@src/utils/config');
-const ndnFileName = 'nintendo.json'
+const ndnFileName = 'nintendoInfo.json'
 
 const GET_QUERY_PAGE = (query) => `https://www.nintendo.com/games/game-guide/#filter/:q=${query}&dFR[platform][0]=Nintendo%20Switch`;
 const puppeteer = require('puppeteer');
