@@ -5,6 +5,7 @@ const ddlScriptPath = "./db/ddl.sql";
 const fs = require("fs");
 const logger = require('../utils/logUtils').getLogger("db-checker");
 const {isFolderExists, isFileExists} = require('../utils/fileUtils');
+const _ = require('lodash');
 
 const GAME_INFO_FILENAME = 'gameInfo.json';
 const METACRITIC_FILENAME = 'metacriticInfo.json';
@@ -28,7 +29,7 @@ exports.execute = async function () {
             try {
                 await processGameFolder(gamesDataPath + "/" + gameFolderName)
             } catch (error) {
-                logger.error(`error during processing ${gameFolderName} folder`)
+                logger.error(`error during processing ${gameFolderName} folder: ${error}`)
             }
         }
     } else {
