@@ -1,16 +1,13 @@
-import {CREATE_POST, FETCH_POSTS} from "./types";
+import {GET_GAMES} from "./types";
 
 const initialState = {
-    posts: [],
-    fetchedPosts: []
+    games: [],
 }
 
-export const postsReducer = (state = initialState, action) => {
+export const gamesReducer = (state = initialState, action) => {
     switch (action.type) {
-        case CREATE_POST:
-            return {...state, posts: state.posts.concat([action.payload])}
-        case FETCH_POSTS:
-            return {...state, fetchedPosts: action.payload}
+        case GET_GAMES:
+            return {...state, games: action.payload}
         default:
             return state
     }

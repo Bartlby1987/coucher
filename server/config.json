@@ -1,4 +1,4 @@
 {
-  "gamesDataPath": "../games",
+  "gamesDataPath": "/media/bartlby/Data/games",
   "storagePath": "../scrapper/storage"
 }

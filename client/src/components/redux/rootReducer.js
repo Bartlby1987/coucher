@@ -1,6 +1,6 @@
 import {combineReducers} from "redux";
-import {postsReducer} from "./postsReducer";
+import {gamesReducer} from "./postsReducer";
 
 export const rootReducer = combineReducers({
-    posts: postsReducer
+    games: gamesReducer
 })

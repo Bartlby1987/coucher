@@ -1,10 +1,11 @@
-import {CREATE_POST} from "./types";
+import {GET_GAMES} from "./types";
+import {sendRequest} from "./utils";
 
-export function createPost(post) {
-    return {
-        type: CREATE_POST,
-        payload: post
+export function gatGames(param=null) {
+    return async dispatch => {
+        let url = "/games/list/";
+        const response = await sendRequest(param, url, "GET");
+        dispatch({type: GET_GAMES, payload: response})
     }
 }
-
 
