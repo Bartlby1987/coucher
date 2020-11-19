@@ -1,1 +1,1 @@
-export const GET_GAMES = "GAME/GET_GAMES";
+export const GAMES_LOADED = "GAME/GAMES_LOADED";

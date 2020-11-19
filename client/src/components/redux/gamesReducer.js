@@ -1,4 +1,4 @@
-import {GET_GAMES} from "./types";
+import { GAMES_LOADED} from "./types";
 
 const initialState = {
     games: [],
@@ -6,7 +6,7 @@ const initialState = {
 
 export const gamesReducer = (state = initialState, action) => {
     switch (action.type) {
-        case GET_GAMES:
+        case GAMES_LOADED:
             return {...state, games: action.payload}
         default:
             return state
