@@ -8,9 +8,9 @@ const availableDirection = new Set(['ASC', "DESC"])
 
 router.get('/list', async function(req, res, next) {
   try {
-    let limit = Number(req.query.limit | 25);
-    let offset = Number(req.query.offset | 0);
-    let sortColumn = req.query.sortColumn | 'name';
+    let limit = Number(req.query.limit || 25);
+    let offset = Number(req.query.offset || 0);
+    let sortColumn = req.query.sortColumn || 'NAME';
     let sortDirection = availableDirection.has(req.query.sortDirection) ? req.query.sortDirection : "ASC";
 
     //todo: filters
