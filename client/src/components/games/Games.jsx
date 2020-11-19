@@ -24,58 +24,14 @@ import {getGames} from "../redux/actions";
 import {connect} from 'react-redux';
 import './games.css';
 
-let rows = [{
-    "name": "1917 The Alien Invasion DX",
-    "genre": "Shmup",
-    "releaseDate": "06/14/2018",
-    "splitScreen": false,
-    "players": 2,
-    "criticScore": "NA",
-    "userScore": "NA"
-}, {
-    "name": "20XX",
-    "genre": "Platform Shooter",
-    "releaseDate": "07/10/2018",
-    "splitScreen": false,
-    "players": 2,
-    "criticScore": 77,
-    "userScore": 7.7
-}];
-
-function descendingComparator(a, b, orderBy) {
-    if (b[orderBy] < a[orderBy]) {
-        return -1;
-    }
-    if (b[orderBy] > a[orderBy]) {
-        return 1;
-    }
-    return 0;
-}
-
-function getComparator(order, orderBy) {
-    return order === 'desc'
-        ? (a, b) => descendingComparator(a, b, orderBy)
-        : (a, b) => -descendingComparator(a, b, orderBy);
-}
-
-function stableSort(array, comparator) {
-    const stabilizedThis = array.map((el, index) => [el, index]);
-    stabilizedThis.sort((a, b) => {
-        const order = comparator(a[0], b[0]);
-        if (order !== 0) return order;
-        return a[1] - b[1];
-    });
-    return stabilizedThis.map((el) => el[0]);
-}
-
 const headCells = [
-    { id: 'name', numeric: false, disablePadding: true, label: 'Game name  ' },
-    { id: 'genre', numeric: true, disablePadding: false, label: 'Genre' },
-    { id: 'releaseDate', numeric: true, disablePadding: false, label: 'ReleaseDate ' },
-    { id: 'splitScreen', numeric: true, disablePadding: false, label: 'SplitScreen ' },
-    { id: 'players', numeric: true, disablePadding: false, label: 'Players ' },
-    { id: 'criticScore', numeric: true, disablePadding: false, label: 'CriticScore ' },
-    { id: 'userScore', numeric: true, disablePadding: false, label: 'UserScore ' },
+    {id: 'name', numeric: false, disablePadding: true, label: 'Game name  '},
+    {id: 'genre', numeric: true, disablePadding: false, label: 'Genre'},
+    {id: 'releaseDate', numeric: true, disablePadding: false, label: 'ReleaseDate '},
+    {id: 'splitScreen', numeric: true, disablePadding: false, label: 'SplitScreen '},
+    {id: 'players', numeric: true, disablePadding: false, label: 'Players '},
+    {id: 'criticScore', numeric: true, disablePadding: false, label: 'CriticScore '},
+    {id: 'userScore', numeric: true, disablePadding: false, label: 'UserScore '},
 ];
 
 class EnhancedTableHead extends React.Component {
@@ -201,40 +157,13 @@ function EnhancedTableToolbar(props) {
 EnhancedTableToolbar.propTypes = {
     numSelected: PropTypes.number.isRequired,
 };
-//
-// const useStyles = makeStyles((theme) => ({
-//     root: {
-//         width: '100%',
-//     },
-//     paper: {
-//         width: '100%',
-//         marginBottom: theme.spacing(2),
-//     },
-//     table: {
-//         minWidth: 750,
-//     },
-//     visuallyHidden: {
-//         border: 0,
-//         clip: 'rect(0 0 0 0)',
-//         height: 1,
-//         margin: -1,
-//         overflow: 'hidden',
-//         padding: 0,
-//         position: 'absolute',
-//         top: 20,
-//         width: 1,
-//     },
-// }));
 
 class EnhancedTable extends React.Component {
-
     constructor(props, context) {
         super(props, context);
-
-
         this.state = {
             order: 'asc',
-            orderBy: 'calories',
+            orderBy: 'name',
             selected: [],
             page: 0,
             dense: false,
@@ -246,44 +175,33 @@ class EnhancedTable extends React.Component {
         this.props.getGames();
     }
 
-    useStyles() {
-        return (makeStyles((theme) => ({
-            root: {
-                width: '100%',
-            },
-            paper: {
-                width: '100%',
-                marginBottom: theme.spacing(2),
-            },
-            table: {
-                minWidth: 750,
-            },
-            visuallyHidden: {
-                border: 0,
-                clip: 'rect(0 0 0 0)',
-                height: 1,
-                margin: -1,
-                overflow: 'hidden',
-                padding: 0,
-                position: 'absolute',
-                top: 20,
-                width: 1,
-            },
-        })))()
-    };
+    stableSort(order, orderBy, rowsPerPage) {
+        let param = {
+            limit: rowsPerPage,
+            offset: 0,
+            sortColumn: "RELEASE_DATE",
+            sortDirection: order.toUpperCase()
+        };
+        this.props.getGames(param);
+        return this.props.games
+    }
+
 
     render() {
+        let {order, orderBy, selected, page, dense, rowsPerPage} = this.state;
+
         const handleRequestSort = (event, property) => {
-            const isAsc = this.state.orderBy === property && this.state.order === 'asc';
+            const isAsc = orderBy === property &&order === 'asc';
             this.setState({
                 order: isAsc ? 'desc' : 'asc',
                 orderBy: property
             });
+            this.stableSort(order, orderBy, rowsPerPage);
         };
 
         const handleSelectAllClick = (event) => {
             if (event.target.checked) {
-                const newSelecteds = this.props.games.map((n) => n.name);
+                const newSelecteds =this.props.games.map((n) => n.name);
                 this.setState({selected: newSelecteds});
                 return;
             }
@@ -324,9 +242,6 @@ class EnhancedTable extends React.Component {
 
         const isSelected = (name) => selected.indexOf(name) !== -1;
 
-        // let rowsPerPage = this.state.rowsPerPage;
-        // let page = this.state.page;
-        let {order, orderBy, selected, page, dense, rowsPerPage} = this.state;
         const emptyRows = rowsPerPage - Math.min(rowsPerPage, this.props.games.length - page * rowsPerPage);
 
         return (
@@ -349,40 +264,42 @@ class EnhancedTable extends React.Component {
                                 rowCount={this.props.games.length}
                             />
                             <TableBody>
-                                {stableSort(this.props.games, getComparator(order, orderBy))
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((row, index) => {
-                                        const isItemSelected = isSelected(row.name);
-                                        const labelId = `enhanced-table-checkbox-${index}`;
+                                {
 
-                                        return (
-                                            <TableRow
-                                                hover
-                                                onClick={(event) => handleClick(event, row.name)}
-                                                role="checkbox"
-                                                aria-checked={isItemSelected}
-                                                tabIndex={-1}
-                                                key={row.name}
-                                                selected={isItemSelected}
-                                            >
-                                                <TableCell padding="checkbox">
-                                                    <Checkbox
-                                                        checked={isItemSelected}
-                                                        inputProps={{'aria-labelledby': labelId}}
-                                                    />
-                                                </TableCell>
-                                                <TableCell component="th" id={labelId} scope="row" padding="none">
-                                                    {row.name}
-                                                </TableCell>
-                                                <TableCell align="right">{row.genre}</TableCell>
-                                                <TableCell align="right">{row.releaseDate}</TableCell>
-                                                <TableCell align="right">{row.splitScreen}</TableCell>
-                                                <TableCell align="right">{row.players}</TableCell>
-                                                <TableCell align="right">{row.criticScore}</TableCell>
-                                                <TableCell align="right">{row.userScore}</TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
+                                    this.props.games
+                                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                        .map((row, index) => {
+                                            const isItemSelected = isSelected(row.name);
+                                            const labelId = `enhanced-table-checkbox-${index}`;
+
+                                            return (
+                                                <TableRow
+                                                    hover
+                                                    onClick={(event) => handleClick(event, row.name)}
+                                                    role="checkbox"
+                                                    aria-checked={isItemSelected}
+                                                    tabIndex={-1}
+                                                    key={row.name}
+                                                    selected={isItemSelected}
+                                                >
+                                                    <TableCell padding="checkbox">
+                                                        <Checkbox
+                                                            checked={isItemSelected}
+                                                            inputProps={{'aria-labelledby': labelId}}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell component="th" id={labelId} scope="row" padding="none">
+                                                        {row.name}
+                                                    </TableCell>
+                                                    <TableCell align="right">{row.genre}</TableCell>
+                                                    <TableCell align="right">{row.releaseDate}</TableCell>
+                                                    <TableCell align="right">{row.splitScreen}</TableCell>
+                                                    <TableCell align="right">{row.players}</TableCell>
+                                                    <TableCell align="right">{row.criticScore}</TableCell>
+                                                    <TableCell align="right">{row.userScore}</TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                 {emptyRows > 0 && (
                                     <TableRow style={{height: (dense ? 33 : 53) * emptyRows}}>
                                         <TableCell colSpan={6}/>
@@ -392,7 +309,7 @@ class EnhancedTable extends React.Component {
                         </Table>
                     </TableContainer>
                     <TablePagination
-                        rowsPerPageOptions={[5, 10, 25, 100]}
+                        rowsPerPageOptions={[5, 10, 25, 50]}
                         component="div"
                         count={this.props.games.length}
                         rowsPerPage={rowsPerPage}
