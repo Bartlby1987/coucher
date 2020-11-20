@@ -43,14 +43,14 @@ class EnhancedTableHead extends React.Component {
         return (
             <TableHead>
                 <TableRow>
-                    <TableCell padding="checkbox">
-                        <Checkbox
-                            indeterminate={numSelected > 0 && numSelected < rowCount}
-                            checked={rowCount > 0 && numSelected === rowCount}
-                            onChange={onSelectAllClick}
-                            inputProps={{'aria-label': 'select all desserts'}}
-                        />
-                    </TableCell>
+                    {/*<TableCell padding="checkbox">*/}
+                    {/*    <Checkbox*/}
+                    {/*        indeterminate={numSelected > 0 && numSelected < rowCount}*/}
+                    {/*        checked={rowCount > 0 && numSelected === rowCount}*/}
+                    {/*        onChange={onSelectAllClick}*/}
+                    {/*        inputProps={{'aria-label': 'select all desserts'}}*/}
+                    {/*    />*/}
+                    {/*</TableCell>*/}
                     {headCells.map((headCell) => (
                         <TableCell
                             key={headCell.id}
@@ -161,57 +161,51 @@ EnhancedTableToolbar.propTypes = {
 class EnhancedTable extends React.Component {
     constructor(props, context) {
         super(props, context);
-        this.state = {
-            order: 'asc',
-            orderBy: 'name',
-            selected: [],
-            page: 0,
-            dense: false,
-            rowsPerPage: 5
-        }
     }
 
     componentDidMount() {
-        this.props.getGames();
+        this.props.getGames(this.props.param);
     }
 
-    stableSort(order, orderBy, rowsPerPage) {
-        let param = {
-            limit: rowsPerPage,
-            offset: 0,
-            sortColumn: "RELEASE_DATE",
-            sortDirection: order.toUpperCase()
-        };
+    updateGamesRows(param) {
         this.props.getGames(param);
         return this.props.games
     }
 
-
     render() {
-        let {order, orderBy, selected, page, dense, rowsPerPage} = this.state;
+        let param = {
+            order: this.props.param.order,
+            orderBy: this.props.param.orderBy,
+            selected: this.props.param.selected,
+            page: this.props.param.page,
+            dense: this.props.param.dense,
+            rowsPerPage: this.props.param.rowsPerPage
+        }
+
+        let {order, orderBy, selected, page, dense, rowsPerPage} = this.props.param;
 
         const handleRequestSort = (event, property) => {
-            const isAsc = orderBy === property &&order === 'asc';
-            this.setState({
-                order: isAsc ? 'desc' : 'asc',
-                orderBy: property
-            });
-            this.stableSort(order, orderBy, rowsPerPage);
+            let newOrder;
+            if (order === 'asc') {
+                newOrder = 'desc'
+            } else {
+                newOrder = 'asc'
+            }
+            let newParam = {...param, orderBy: property, order: newOrder}
+            this.updateGamesRows(newParam);
         };
 
         const handleSelectAllClick = (event) => {
             if (event.target.checked) {
-                const newSelecteds =this.props.games.map((n) => n.name);
-                this.setState({selected: newSelecteds});
-                return;
+                const newSelecteds = this.props.games.map((n) => n.name);
+                let newParam = {...param, selected: newSelecteds}
+                this.updateGamesRows(newParam);
             }
-            this.setState({selected: []});
         };
 
         const handleClick = (event, name) => {
             const selectedIndex = selected.indexOf(name);
             let newSelected = [];
-
             if (selectedIndex === -1) {
                 newSelected = newSelected.concat(selected, name);
             } else if (selectedIndex === 0) {
@@ -224,25 +218,31 @@ class EnhancedTable extends React.Component {
                     selected.slice(selectedIndex + 1),
                 );
             }
-
-            this.setState({selected: newSelected});
+            let newParam = {...param, selected: newSelected}
+            this.updateGamesRows(newParam);
         };
+
+
 
         const handleChangePage = (event, newPage) => {
-            this.setState({page: newPage});
+            let newParam = {...param, page: newPage}
+            this.updateGamesRows(newParam);
         };
 
+
+
         const handleChangeRowsPerPage = (event) => {
-            this.setState({rowsPerPage: parseInt(event.target.value, 10), page: 0});
+            let newParam = {...param, rowsPerPage: parseInt(event.target.value, 10), page: 0}
+            this.updateGamesRows(newParam);
         };
 
         const handleChangeDense = (event) => {
-            this.setState({dense: event.target.checked});
+            let newParam = {...param, dense: event.target.checked}
+            this.updateGamesRows(newParam);
         };
 
         const isSelected = (name) => selected.indexOf(name) !== -1;
-
-        const emptyRows = rowsPerPage - Math.min(rowsPerPage, this.props.games.length - page * rowsPerPage);
+        const emptyRows = rowsPerPage - this.props.games.length ;
 
         return (
             <div className='root'>
@@ -265,9 +265,7 @@ class EnhancedTable extends React.Component {
                             />
                             <TableBody>
                                 {
-
                                     this.props.games
-                                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                         .map((row, index) => {
                                             const isItemSelected = isSelected(row.name);
                                             const labelId = `enhanced-table-checkbox-${index}`;
@@ -282,12 +280,12 @@ class EnhancedTable extends React.Component {
                                                     key={row.name}
                                                     selected={isItemSelected}
                                                 >
-                                                    <TableCell padding="checkbox">
-                                                        <Checkbox
-                                                            checked={isItemSelected}
-                                                            inputProps={{'aria-labelledby': labelId}}
-                                                        />
-                                                    </TableCell>
+                                                    {/*<TableCell padding="checkbox">*/}
+                                                    {/*    <Checkbox*/}
+                                                    {/*        checked={isItemSelected}*/}
+                                                    {/*        inputProps={{'aria-labelledby': labelId}}*/}
+                                                    {/*    />*/}
+                                                    {/*</TableCell>*/}
                                                     <TableCell component="th" id={labelId} scope="row" padding="none">
                                                         {row.name}
                                                     </TableCell>
@@ -311,7 +309,7 @@ class EnhancedTable extends React.Component {
                     <TablePagination
                         rowsPerPageOptions={[5, 10, 25, 50]}
                         component="div"
-                        count={this.props.games.length}
+                        count={500}
                         rowsPerPage={rowsPerPage}
                         page={page}
                         onChangePage={handleChangePage}
@@ -331,7 +329,8 @@ const mapDispatchToProps = {
     getGames
 };
 const mapStateToProps = state => ({
-    games: state.games.games
+    games: state.games.games,
+    param: state.games.paramLoad
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(EnhancedTable);
