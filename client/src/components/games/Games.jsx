@@ -13,7 +13,6 @@ import TableSortLabel from '@material-ui/core/TableSortLabel';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import Paper from '@material-ui/core/Paper';
-import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
 import FilterListIcon from '@material-ui/icons/FilterList';
@@ -23,6 +22,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import {getGames} from "../redux/actions";
 import {connect} from 'react-redux';
 import './games.css';
+import Loader from "../Loader";
 
 const headCells = [
     {id: 'name', numeric: false, disablePadding: true, label: 'Game name  '},
@@ -36,22 +36,15 @@ const headCells = [
 
 class EnhancedTableHead extends React.Component {
     render() {
-        const {onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort} = this.props;
+        const {order, orderBy, onRequestSort} = this.props;
         const createSortHandler = (property) => (event) => {
             onRequestSort(event, property);
         };
         return (
             <TableHead>
                 <TableRow>
-                    {/*<TableCell padding="checkbox">*/}
-                    {/*    <Checkbox*/}
-                    {/*        indeterminate={numSelected > 0 && numSelected < rowCount}*/}
-                    {/*        checked={rowCount > 0 && numSelected === rowCount}*/}
-                    {/*        onChange={onSelectAllClick}*/}
-                    {/*        inputProps={{'aria-label': 'select all desserts'}}*/}
-                    {/*    />*/}
-                    {/*</TableCell>*/}
                     {headCells.map((headCell) => (
+
                         <TableCell
                             key={headCell.id}
                             align={headCell.numeric ? 'right' : 'left'}
@@ -203,33 +196,10 @@ class EnhancedTable extends React.Component {
             }
         };
 
-        const handleClick = (event, name) => {
-            const selectedIndex = selected.indexOf(name);
-            let newSelected = [];
-            if (selectedIndex === -1) {
-                newSelected = newSelected.concat(selected, name);
-            } else if (selectedIndex === 0) {
-                newSelected = newSelected.concat(selected.slice(1));
-            } else if (selectedIndex === selected.length - 1) {
-                newSelected = newSelected.concat(selected.slice(0, -1));
-            } else if (selectedIndex > 0) {
-                newSelected = newSelected.concat(
-                    selected.slice(0, selectedIndex),
-                    selected.slice(selectedIndex + 1),
-                );
-            }
-            let newParam = {...param, selected: newSelected}
-            this.updateGamesRows(newParam);
-        };
-
-
-
         const handleChangePage = (event, newPage) => {
             let newParam = {...param, page: newPage}
             this.updateGamesRows(newParam);
         };
-
-
 
         const handleChangeRowsPerPage = (event) => {
             let newParam = {...param, rowsPerPage: parseInt(event.target.value, 10), page: 0}
@@ -242,7 +212,44 @@ class EnhancedTable extends React.Component {
         };
 
         const isSelected = (name) => selected.indexOf(name) !== -1;
-        const emptyRows = rowsPerPage - this.props.games.length ;
+        const emptyRows = rowsPerPage - this.props.games.length;
+        let gamesInfo;
+        let tableBody =
+            <TableBody>
+                {
+                    this.props.games
+                        .map((row, index) => {
+                            const labelId = `enhanced-table-checkbox-${index}`;
+                            return (
+                                <TableRow
+                                    hover
+
+                                    tabIndex={-1}
+                                    key={row.name}
+                                >
+                                    <TableCell component="th" id={labelId} scope="row" padding="none">
+                                        {row.name}
+                                    </TableCell>
+                                    <TableCell align="right">{row.genre}</TableCell>
+                                    <TableCell align="right">{row.releaseDate}</TableCell>
+                                    <TableCell align="right">{row.splitScreen}</TableCell>
+                                    <TableCell align="right">{row.players}</TableCell>
+                                    <TableCell align="right">{row.criticScore}</TableCell>
+                                    <TableCell align="right">{row.userScore}</TableCell>
+                                </TableRow>
+                            );
+                        })}
+                {emptyRows > 0 && (
+                    <TableRow style={{height: (dense ? 33 : 53) * emptyRows}}>
+                        <TableCell colSpan={6}/>
+                    </TableRow>
+                )}
+            </TableBody>
+        if (this.props.loading) {
+            gamesInfo = <Loader/>
+        } else {
+            gamesInfo = tableBody;
+        }
 
         return (
             <div className='root'>
@@ -263,47 +270,8 @@ class EnhancedTable extends React.Component {
                                 onRequestSort={handleRequestSort}
                                 rowCount={this.props.games.length}
                             />
-                            <TableBody>
-                                {
-                                    this.props.games
-                                        .map((row, index) => {
-                                            const isItemSelected = isSelected(row.name);
-                                            const labelId = `enhanced-table-checkbox-${index}`;
+                                {gamesInfo}
 
-                                            return (
-                                                <TableRow
-                                                    hover
-                                                    onClick={(event) => handleClick(event, row.name)}
-                                                    role="checkbox"
-                                                    aria-checked={isItemSelected}
-                                                    tabIndex={-1}
-                                                    key={row.name}
-                                                    selected={isItemSelected}
-                                                >
-                                                    {/*<TableCell padding="checkbox">*/}
-                                                    {/*    <Checkbox*/}
-                                                    {/*        checked={isItemSelected}*/}
-                                                    {/*        inputProps={{'aria-labelledby': labelId}}*/}
-                                                    {/*    />*/}
-                                                    {/*</TableCell>*/}
-                                                    <TableCell component="th" id={labelId} scope="row" padding="none">
-                                                        {row.name}
-                                                    </TableCell>
-                                                    <TableCell align="right">{row.genre}</TableCell>
-                                                    <TableCell align="right">{row.releaseDate}</TableCell>
-                                                    <TableCell align="right">{row.splitScreen}</TableCell>
-                                                    <TableCell align="right">{row.players}</TableCell>
-                                                    <TableCell align="right">{row.criticScore}</TableCell>
-                                                    <TableCell align="right">{row.userScore}</TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                {emptyRows > 0 && (
-                                    <TableRow style={{height: (dense ? 33 : 53) * emptyRows}}>
-                                        <TableCell colSpan={6}/>
-                                    </TableRow>
-                                )}
-                            </TableBody>
                         </Table>
                     </TableContainer>
                     <TablePagination
@@ -330,7 +298,8 @@ const mapDispatchToProps = {
 };
 const mapStateToProps = state => ({
     games: state.games.games,
-    param: state.games.paramLoad
+    param: state.games.paramLoad,
+    loading: state.app.loading
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(EnhancedTable);

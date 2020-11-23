@@ -9,7 +9,7 @@ const initialState = {
         page: 0,
         dense: false,
         rowsPerPage: 10
-    }
+    },
 }
 
 export const gamesReducer = (state = initialState, action) => {
