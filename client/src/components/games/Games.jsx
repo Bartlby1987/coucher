@@ -166,6 +166,7 @@ class EnhancedTable extends React.Component {
     }
 
     render() {
+
         let param = {
             order: this.props.param.order,
             orderBy: this.props.param.orderBy,
